@@ -38,4 +38,31 @@ def vector_embedding():
         st.session_state.loader=PyPDFDirectoryLoader("./us_census")
         st.session_state.docs=st.session_state.loader.load()
         st.session_state.text_splitter=RecursiveCharacterTextSplitter(chunk_size=1000,chunk_overlp=200)
-        st.session_state.final_documents=st.session_state.text_splitter.split_documents(st.sess)
+        st.session_state.final_documents=st.session_state.text_splitter.split_documents(st.session_state.docs)
+        st.session_state.vectors=FAISS.from_documents(st.session_state.final_documents, st.session.embeddings)
+
+
+
+prompt1=st.text_input("what you want to ask from the documents?")
+
+
+if st.button("Creating Vector Store"):
+    vector_embedding()
+    st.write("vector store DB is ready")
+
+import time
+
+if prompt1:
+    document_chain=create_stuff_documents_chain(llm,prompt)
+    retriever=st.session_state.vectors.as_retriever()
+    retrival_chain=create_retrieval_chain(retriever,document_chain)
+    
+    start=time.process_time()
+    response=retrival_chain.invoke({'input':prompt1})
+    st.write(response['answer'])
+
+
+    with st.expander("Documents Similarity Search"):
+        for i, doc in enumerate(response['context']):
+            st.write(doc.page_content)
+            st.write("----------------------------------")
